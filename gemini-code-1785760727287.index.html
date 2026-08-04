@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ديوان — نظام المراسلات الداخلية</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;700;800&family=Tajawal:wght@400;500;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F6F3EC;
+    --paper-raised:#FBFAF6;
+    --ink:#1E2A3E;
+    --ink-soft:#3A4A63;
+    --seal:#A9793A;
+    --seal-dark:#8A5F28;
+    --seal-tint:#F1E4CE;
+    --line:#DED6C4;
+    --muted:#78716A;
+    --urgent:#A6473A;
+    --urgent-tint:#F3E2DF;
+    --success:#4C7A5D;
+    --success-tint:#E1EBE3;
+    --pending:#B08D57;
+    --pending-tint:#F3E9D8;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    font-family:'Tajawal', sans-serif;
+    background:var(--paper);
+    color:var(--ink);
+    min-height:100vh;
+    display:flex;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,.display{font-family:'Cairo', sans-serif;}
+  .mono{font-family:'JetBrains Mono', monospace; direction:ltr; unicode-bidi:isolate;}
+
+  /* ---------- Login Screen ---------- */
+  .login-overlay {
+    position: fixed; inset: 0; background: var(--ink);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 1000; padding: 20px;
+  }
+  .login-card {
+    background: var(--paper-raised);
+    width: 100%; max-width: 400px;
+    padding: 36px 30px; border-radius: 16px;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.3);
+    border: 1px solid var(--seal-tint);
+    text-align: center;
+  }
+  .login-brand-seal {
+    width: 54px; height: 54px; border-radius: 50%;
+    border: 2px solid var(--seal); margin: 0 auto 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Cairo'; font-weight: 800; font-size: 22px; color: var(--seal);
+  }
+  .login-title { font-size: 22px; font-weight: 800; margin-bottom: 4px; color: var(--ink); }
+  .login-subtitle { font-size: 13px; color: var(--muted); margin-bottom: 24px; }
+  .login-hint {
+    background: var(--paper); border: 1px dashed var(--line);
+    padding: 10px; border-radius: 8px; font-size: 11.5px;
+    color: var(--ink-soft); text-align: right; margin-top: 18px; line-height: 1.6;
+  }
+
+  /* ---------- Layout ---------- */
+  .app-container { display: flex; width: 100vw; min-height: 100vh; }
+  
+  .sidebar{
+    width:240px; flex-shrink:0;
+    background:var(--ink);
+    color:var(--paper-raised);
+    display:flex; flex-direction:column;
+    padding:28px 20px;
+    position:sticky; top:0; height:100vh;
+  }
+  .brand{display:flex; align-items:center; gap:10px; margin-bottom:36px;}
+  .brand-seal{
+    width:38px; height:38px; border-radius:50%;
+    border:2px solid var(--seal);
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Cairo'; font-weight:800; font-size:15px; color:var(--seal);
+    flex-shrink:0;
+  }
+  .brand-text .t1{font-family:'Cairo'; font-weight:800; font-size:19px; letter-spacing:.5px;}
+  .brand-text .t2{font-size:11px; color:#9AA6BB; margin-top:1px;}
+
+  nav{display:flex; flex-direction:column; gap:4px; flex:1;}
+  .nav-item{
+    display:flex; align-items:center; gap:10px;
+    padding:11px 14px; border-radius:8px; cursor:pointer;
+    color:#C6CEDC; font-size:14.5px; font-weight:500;
+    border:1px solid transparent;
+    transition:.15s;
+  }
+  .nav-item:hover{background:rgba(255,255,255,.06); color:#fff;}
+  .nav-item.active{
+    background:rgba(169,121,58,.18);
+    border-color:rgba(169,121,58,.4);
+    color:#F1E4CE;
+  }
+  .nav-icon{width:18px; text-align:center; font-size:15px;}
+  .nav-count{
+    margin-inline-start:auto; font-family:'JetBrains Mono'; font-size:11px;
+    background:rgba(255,255,255,.1); padding:1px 7px; border-radius:20px;
+  }
+  .sidebar-foot{
+    border-top:1px solid rgba(255,255,255,.12); padding-top:16px; margin-top:16px;
+    font-size:11.5px; color:#8B96AB; line-height:1.7;
+  }
+  .user-pill {
+    display: flex; align-items: center; justify-content: space-between;
+    background: rgba(255,255,255,0.06); padding: 8px 12px; border-radius: 8px;
+    margin-bottom: 12px; font-size: 12px; border: 1px solid rgba(255,255,255,0.1);
+  }
+  .logout-btn { background: none; border: none; color: var(--urgent-tint); cursor: pointer; font-weight: 700; font-size: 12px; }
+  
+  .sync-pill{
+    display:flex; align-items:center; gap:7px; font-size:11.5px; color:#B7DCC4;
+    background:rgba(76,122,93,.18); border:1px solid rgba(76,122,93,.4);
+    padding:7px 10px; border-radius:8px; margin-bottom:14px;
+  }
+  .sync-dot{width:7px; height:7px; border-radius:50%; background:#7BC99A; flex-shrink:0;}
+  .sync-dot.saving{background:#D9A94F; animation:pulse 1s infinite;}
+  @keyframes pulse{0%,100%{opacity:1;} 50%{opacity:.35;}}
+
+  .main{flex:1; min-width:0; display:flex; flex-direction:column;}
+  .topbar{
+    display:flex; align-items:center; gap:16px;
+    padding:20px 32px; border-bottom:1px solid var(--line);
+    background:var(--paper-raised);
+  }
+  .search-wrap{
+    flex:1; max-width:420px; position:relative;
+  }
+  .search-wrap input{
+    width:100%; padding:10px 14px 10px 14px; border-radius:9px;
+    border:1px solid var(--line); background:var(--paper);
+    font-family:'Tajawal'; font-size:13.5px; color:var(--ink);
+    outline:none;
+  }
+  .search-wrap input:focus{border-color:var(--seal);}
+  .today{font-size:12.5px; color:var(--muted); margin-inline-start:auto;}
+  .content{padding:28px 32px 60px; flex:1;}
+
+  /* ---------- Page Header ---------- */
+  .page-head{display:flex; align-items:flex-end; justify-content:space-between; margin-bottom:22px; gap:16px; flex-wrap:wrap;}
+  .page-head h1{font-size:22px; font-weight:800;}
+  .page-head p{font-size:13px; color:var(--muted); margin-top:4px;}
+  .btn{
+    font-family:'Tajawal'; font-weight:700; font-size:13.5px;
+    padding:10px 18px; border-radius:8px; border:none; cursor:pointer;
+    display:inline-flex; align-items:center; gap:7px;
+    transition:.15s;
+  }
+  .btn-primary{background:var(--ink); color:var(--paper-raised);}
+  .btn-primary:hover{background:var(--ink-soft);}
+  .btn-outline{background:transparent; border:1px solid var(--line); color:var(--ink);}
+  .btn-outline:hover{border-color:var(--seal); color:var(--seal-dark);}
+  .btn-danger{background:transparent; border:1px solid var(--urgent); color:var(--urgent);}
+  .btn-danger:hover{background:var(--urgent-tint);}
+  .btn-danger-solid{background:var(--urgent); color:#fff;}
+  .btn-danger-solid:hover{background:#8C3A30;}
+  .btn:disabled{opacity:.5; cursor:not-allowed;}
+
+  /* ---------- Stat Cards ---------- */
+  .stats{display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:28px;}
+  .stat-card{
+    background:var(--paper-raised); border:1px solid var(--line); border-radius:12px;
+    padding:18px 20px; position:relative; overflow:hidden;
+  }
+  .stat-card .num{font-family:'JetBrains Mono'; font-weight:700; font-size:28px; color:var(--ink);}
+  .stat-card .lbl{font-size:12.5px; color:var(--muted); margin-top:2px;}
+  .stat-card .bar{position:absolute; inset-inline-start:0; top:0; bottom:0; width:4px;}
+  .stat-card.c1 .bar{background:var(--seal);}
+  .stat-card.c2 .bar{background:var(--pending);}
+  .stat-card.c3 .bar{background:var(--urgent);}
+  .stat-card.c4 .bar{background:var(--success);}
+
+  /* ---------- Section Title ---------- */
+  .section-title{font-family:'Cairo'; font-weight:700; font-size:15px; margin:26px 0 12px; color:var(--ink-soft);}
+
+  /* ---------- Table / List ---------- */
+  .list{background:var(--paper-raised); border:1px solid var(--line); border-radius:12px; overflow:hidden;}
+  .row{
+    display:grid; grid-template-columns:64px 110px 1fr 140px 110px 100px 90px;
+    align-items:center; gap:12px;
+    padding:14px 18px; border-bottom:1px solid var(--line);
+    transition:.12s;
+  }
+  .row:last-child{border-bottom:none;}
+  .row:hover{background:#F1EEE5;}
+  .row.head{
+    font-size:11px; color:var(--muted); font-weight:700; cursor:default;
+    background:transparent; letter-spacing:.3px;
+  }
+  .row.head:hover{background:transparent;}
+  .row .clickable{cursor:pointer;}
+  .seal-mini{
+    width:40px; height:40px; border-radius:50%; border:1.5px dashed var(--seal);
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Cairo'; font-weight:800; font-size:12px; color:var(--seal-dark);
+    transform:rotate(-8deg); cursor:pointer;
+  }
+  .ref{font-family:'JetBrains Mono'; font-size:12.5px; color:var(--muted); cursor:pointer;}
+  .subj{font-size:14px; font-weight:500; cursor:pointer;}
+  .subj .who{font-size:12px; color:var(--muted); font-weight:400; margin-top:2px;}
+  .badge{
+    display:inline-flex; align-items:center; gap:5px; font-size:11.5px; font-weight:700;
+    padding:4px 10px; border-radius:20px; width:fit-content;
+  }
+  .b-new{background:var(--pending-tint); color:var(--pending);}
+  .b-progress{background:#E4E9F1; color:#3D5A80;}
+  .b-done{background:var(--success-tint); color:var(--success);}
+  .b-urgent{background:var(--urgent-tint); color:var(--urgent);}
+  .b-normal{background:#EFEEE9; color:var(--muted);}
+  .date-cell{font-size:12.5px; color:var(--muted); font-family:'JetBrains Mono'; cursor:pointer;}
+  .row-actions{display:flex; gap:6px; justify-content:flex-end;}
+  .icon-btn{
+    width:30px; height:30px; border-radius:7px; border:1px solid var(--line); background:var(--paper-raised);
+    display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:13px; color:var(--muted);
+    transition:.12s;
+  }
+  .icon-btn:hover{border-color:var(--seal); color:var(--seal-dark);}
+  .icon-btn.del:hover{border-color:var(--urgent); color:var(--urgent); background:var(--urgent-tint);}
+  .icon-btn.disabled{opacity: 0.3; cursor: not-allowed; pointer-events: none;}
+
+  .empty{padding:60px 20px; text-align:center; color:var(--muted);}
+  .empty .big{font-size:32px; margin-bottom:10px;}
+  .loading-state{padding:80px 20px; text-align:center; color:var(--muted); font-size:14px;}
+
+  /* ---------- Drawer / Modal ---------- */
+  .overlay{
+    position:fixed; inset:0; background:rgba(30,42,62,.35);
+    display:none; align-items:stretch; justify-content:flex-end; z-index:50;
+  }
+  .overlay.show{display:flex;}
+  .drawer{
+    width:460px; max-width:92vw; background:var(--paper-raised);
+    height:100%; overflow-y:auto; padding:28px 28px 40px;
+    box-shadow:-8px 0 30px rgba(0,0,0,.12);
+    animation:slidein .22s ease;
+  }
+  @keyframes slidein{from{transform:translateX(30px); opacity:0;} to{transform:translateX(0); opacity:1;}}
+  .drawer-head{display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px;}
+  .drawer-close{background:none; border:none; font-size:20px; cursor:pointer; color:var(--muted); line-height:1;}
+  .drawer .ref-big{font-family:'JetBrains Mono'; color:var(--seal-dark); font-weight:700; font-size:13px; margin-bottom:4px;}
+  .drawer h2{font-size:19px; font-weight:800; margin-bottom:18px; line-height:1.4;}
+
+  .kv{display:grid; grid-template-columns:100px 1fr; gap:10px 8px; font-size:13.5px; margin-bottom:18px;}
+  .kv .k{color:var(--muted);}
+  .kv .v{font-weight:500;}
+
+  .status-row{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:22px;}
+  .status-opt{
+    padding:7px 14px; border-radius:8px; border:1px solid var(--line);
+    font-size:12.5px; font-weight:600; cursor:pointer; background:transparent; color:var(--muted);
+  }
+  .status-opt.active-new{background:var(--pending-tint); color:var(--pending); border-color:var(--pending);}
+  .status-opt.active-progress{background:#E4E9F1; color:#3D5A80; border-color:#3D5A80;}
+  .status-opt.active-done{background:var(--success-tint); color:var(--success); border-color:var(--success);}
+  .status-opt.read-only{cursor: not-allowed; opacity: 0.7;}
+
+  .notes-box{
+    background:var(--paper); border:1px solid var(--line); border-radius:10px;
+    padding:14px; font-size:13.5px; line-height:1.8; color:var(--ink-soft); white-space:pre-wrap;
+  }
+
+  .drawer-actions{display:flex; gap:10px; margin-top:24px; padding-top:20px; border-top:1px solid var(--line);}
+
+  .confirm-box{
+    background:var(--urgent-tint); border:1px solid var(--urgent); border-radius:10px;
+    padding:16px; margin-top:24px;
+  }
+  .confirm-box p{font-size:13.5px; color:var(--urgent); font-weight:600; margin-bottom:12px;}
+  .confirm-box .row-btns{display:flex; gap:10px;}
+
+  /* ---------- Form ---------- */
+  .form-grid{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
+  .field{display:flex; flex-direction:column; gap:6px; margin-bottom:14px;}
+  .field.full{grid-column:1/-1;}
+  .field label{font-size:12.5px; font-weight:700; color:var(--ink-soft);}
+  .field input, .field select, .field textarea{
+    padding:10px 12px; border:1px solid var(--line); border-radius:8px;
+    font-family:'Tajawal'; font-size:13.5px; background:var(--paper); color:var(--ink); outline:none;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus{border-color:var(--seal);}
+  .field textarea{resize:vertical; min-height:70px;}
+  .priority-toggle{display:flex; gap:8px;}
+  .priority-toggle label{
+    flex:1; text-align:center; padding:9px; border:1px solid var(--line); border-radius:8px;
+    font-size:13px; font-weight:600; cursor:pointer; color:var(--muted);
+  }
+  .priority-toggle input{display:none;}
+  .p-normal-lbl:has(input:checked){background:#EFEEE9; border-color:var(--muted); color:var(--ink);}
+  .p-urgent-lbl:has(input:checked){background:var(--urgent-tint); border-color:var(--urgent); color:var(--urgent);}
+  .form-actions{display:flex; justify-content:flex-end; gap:10px; margin-top:6px;}
+
+  .toast{
+    position:fixed; bottom:26px; left:50%; transform:translateX(-50%) translateY(20px);
+    background:var(--ink); color:#fff; padding:12px 22px; border-radius:9px;
+    font-size:13.5px; font-weight:500; opacity:0; transition:.25s; z-index:1100; pointer-events:none;
+  }
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+  .toast.error{background:var(--urgent);}
+
+  @media (max-width:880px){
+    .sidebar{position:fixed; z-index:40; transform:translateX(105%); transition:.2s; box-shadow:-10px 0 30px rgba(0,0,0,.2);}
+    .sidebar.open{transform:translateX(0);}
+    .stats{grid-template-columns:repeat(2,1fr);}
+    .row{grid-template-columns:44px 1fr 80px; }
+    .row .ref, .row .date-cell{display:none;}
+    .content{padding:20px;}
+    .topbar{padding:16px 20px;}
+  }
+</style>
+</head>
+<body>
+
+<!-- Login Modal -->
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-card">
+    <div class="login-brand-seal">د</div>
+    <div class="login-title">نظام ديوان</div>
+    <div class="login-subtitle">تسجيل الدخول للمراسلات الداخلية</div>
+    
+    <form id="loginForm">
+      <div class="field" style="text-align: right;">
+        <label>اسم المستخدم</label>
+        <input type="text" id="loginUsername" placeholder="أدخل اسم المستخدم" required>
+      </div>
+      <div class="field" style="text-align: right;">
+        <label>كلمة المرور</label>
+        <input type="password" id="loginPassword" placeholder="أدخل كلمة المرور" required>
+      </div>
+      <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; margin-top: 10px; padding: 12px;">تسجيل الدخول</button>
+    </form>
+
+    <div class="login-hint">
+      <strong>حسابات التجربة والتجربة المتاحة:</strong><br>
+      • مدير (كامل الصلاحيات): <code>admin</code> / <code>admin123</code><br>
+      • محرر (إضافة وتعديل): <code>editor</code> / <code>editor123</code><br>
+      • مستعرض (قراءة فقط): <code>viewer</code> / <code>viewer123</code>
+    </div>
+  </div>
+</div>
+
+<!-- Main Application -->
+<div class="app-container">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="brand-seal">د</div>
+      <div class="brand-text">
+        <div class="t1">ديوان</div>
+        <div class="t2">نظام المراسلات الداخلية</div>
+      </div>
+    </div>
+    
+    <div class="user-pill">
+      <div>
+        <strong id="currentUserName">الزائر</strong>
+        <div style="font-size:10px; color:#9AA6BB;" id="currentUserRole">صلاحية: عرض</div>
+      </div>
+      <button class="logout-btn" onclick="logout()">خروج</button>
+    </div>
+
+    <div class="sync-pill"><span class="sync-dot" id="syncDot"></span><span id="syncLabel">متصل — البيانات مشتركة بين الأجهزة</span></div>
+    <nav>
+      <div class="nav-item active" data-page="dashboard">
+        <span class="nav-icon">◆</span> لوحة المتابعة
+      </div>
+      <div class="nav-item" data-page="incoming">
+        <span class="nav-icon">↙</span> البريد الوارد <span class="nav-count" id="countIn">0</span>
+      </div>
+      <div class="nav-item" data-page="outgoing">
+        <span class="nav-icon">↗</span> البريد الصادر <span class="nav-count" id="countOut">0</span>
+      </div>
+      <div class="nav-item" data-page="all">
+        <span class="nav-icon">☰</span> جميع المعاملات
+      </div>
+    </nav>
+    <div class="sidebar-foot">
+      البيانات مشتركة: أي شخص يفتح هذا البرنامج يرى نفس المعاملات ويقدر يضيف أو يعدّل أو يحذف منها حسب صلاحياته.
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <button class="btn btn-outline" style="display:none" id="menuBtn">☰</button>
+      <div class="search-wrap">
+        <input type="text" id="searchInput" placeholder="ابحث برقم المعاملة، الموضوع، أو الجهة...">
+      </div>
+      <div class="today" id="todayLabel"></div>
+    </div>
+
+    <div class="content" id="content">
+      <div class="loading-state">جارٍ تحميل المعاملات...</div>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="drawer" id="drawer"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ---------------- User & Auth Config ---------------- */
+const USERS = [
+  { username: 'admin',  pass: 'admin123',  name: 'المدير العام', role: 'admin' },
+  { username: 'editor', pass: 'editor123', name: 'محرر المعاملات', role: 'editor' },
+  { username: 'viewer', pass: 'viewer123', name: 'مستعرض البيانات', role: 'viewer' }
+];
+
+let currentUser = null;
+
+function hasPermission(action) {
+  if (!currentUser) return false;
+  if (currentUser.role === 'admin') return true;
+  if (currentUser.role === 'editor') {
+    return action === 'create' || action === 'edit' || action === 'status';
+  }
+  if (currentUser.role === 'viewer') {
+    return action === 'read';
+  }
+  return false;
+}
+
+/* ---------------- Storage Config ---------------- */
+const STORAGE_KEY = 'correspondence-data-v1';
+const SHARED = true;
+
+const defaultRecords = [
+  {id:1, type:'وارد', ref:'2026/0001', date:'2026-07-28', from:'الإدارة المالية', to:'مكتب المدير العام', subject:'طلب اعتماد ميزانية الربع الثالث', priority:'عاجل', status:'قيد المعالجة',
+   notes:'وردت المذكرة من الإدارة المالية بخصوص اعتماد بنود ميزانية الربع الثالث. بانتظار توقيع المدير العام.'},
+  {id:2, type:'صادر', ref:'2026/0002', date:'2026-07-29', from:'مكتب المدير العام', to:'إدارة الموارد البشرية', subject:'تعميم بشأن ساعات الدوام الصيفي', priority:'عادي', status:'مكتمل',
+   notes:'تم إرسال التعميم إلى جميع الأقسام عبر إدارة الموارد البشرية.'},
+  {id:3, type:'وارد', ref:'2026/0003', date:'2026-07-30', from:'قسم تقنية المعلومات', to:'الإدارة العامة', subject:'إشعار صيانة دورية للأنظمة', priority:'عادي', status:'جديد',
+   notes:''},
+  {id:4, type:'وارد', ref:'2026/0004', date:'2026-08-01', from:'إدارة المشتريات', to:'الشؤون القانونية', subject:'مراجعة عقد التوريد السنوي', priority:'عاجل', status:'جديد',
+   notes:'يرجى مراجعة بنود العقد قبل نهاية الأسبوع.'},
+  {id:5, type:'صادر', ref:'2026/0005', date:'2026-08-02', from:'الشؤون القانونية', to:'إدارة المشتريات', subject:'ملاحظات أولية على عقد التوريد', priority:'عادي', status:'قيد المعالجة',
+   notes:''}
+];
+
+let records = [];
+let seq = 6;
+let currentPage = 'dashboard';
+let searchTerm = '';
+let dataReady = false;
+
+/* ---------------- Auth Handlers ---------------- */
+document.getElementById('loginForm').addEventListener('submit', function(e) {
+  e.preventDefault();
+  const u = document.getElementById('loginUsername').value.trim();
+  const p = document.getElementById('loginPassword').value.trim();
+
+  const found = USERS.find(user => user.username === u && user.pass === p);
+  if (found) {
+    currentUser = found;
+    document.getElementById('loginOverlay').style.display = 'none';
+    document.getElementById('currentUserName').textContent = currentUser.name;
+    const roleMap = { admin: 'مدير نظام', editor: 'محرر بيانات', viewer: 'مستعرض' };
+    document.getElementById('currentUserRole').textContent = `الصلاحية: ${roleMap[currentUser.role]}`;
+    showToast(`مرحباً بك يا ${currentUser.name}`);
+    render();
+  } else {
+    showToast('اسم المستخدم أو كلمة المرور غير صحيحة', true);
+  }
+});
+
+function logout() {
+  currentUser = null;
+  document.getElementById('loginUsername').value = '';
+  document.getElementById('loginPassword').value = '';
+  document.getElementById('loginOverlay').style.display = 'flex';
+}
+
+/* ---------------- Storage Helpers ---------------- */
+function setSyncState(state){
+  const dot = document.getElementById('syncDot');
+  const label = document.getElementById('syncLabel');
+  if(!dot) return;
+  if(state === 'saving'){
+    dot.classList.add('saving');
+    label.textContent = 'جارٍ الحفظ...';
+  } else if(state === 'error'){
+    dot.classList.remove('saving');
+    label.textContent = 'تعذّر الحفظ — سيُعاد المحاولة';
+  } else {
+    dot.classList.remove('saving');
+    label.textContent = 'متصل — البيانات مشتركة بين الأجهزة';
+  }
+}
+
+async function loadData(){
+  try{
+    const result = await window.storage.get(STORAGE_KEY, SHARED);
+    if(result && result.value){
+      const parsed = JSON.parse(result.value);
+      records = parsed.records || [];
+      seq = parsed.seq || 6;
+    } else {
+      records = defaultRecords;
+      seq = 6;
+      await persist();
+    }
+  } catch(err){
+    records = defaultRecords;
+    seq = 6;
+    try{ await persist(); } catch(e2){}
+  }
+  dataReady = true;
+}
+
+async function persist(){
+  setSyncState('saving');
+  try{
+    const payload = JSON.stringify({records, seq});
+    const result = await window.storage.set(STORAGE_KEY, payload, SHARED);
+    if(!result){
+      setSyncState('error');
+      showToast('تعذّر حفظ التغييرات، حاول مرة أخرى', true);
+    } else {
+      setSyncState('idle');
+    }
+  } catch(err){
+    setSyncState('error');
+    showToast('تعذّر حفظ التغييرات، حاول مرة أخرى', true);
+  }
+}
+
+/* ---------------- UI Helpers ---------------- */
+function fmtDate(d){
+  const dt = new Date(d);
+  return dt.toLocaleDateString('ar-EG', {day:'2-digit', month:'2-digit', year:'numeric'});
+}
+function statusBadge(s){
+  const map = {'جديد':'b-new', 'قيد المعالجة':'b-progress', 'مكتمل':'b-done'};
+  return `<span class="badge ${map[s]}">${s}</span>`;
+}
+function priorityBadge(p){
+  return p === 'عاجل' ? `<span class="badge b-urgent">عاجل</span>` : `<span class="badge b-normal">عادي</span>`;
+}
+function sealLabel(type){
+  return type === 'وارد' ? 'وارد' : 'صادر';
+}
+function showToast(msg, isError){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.toggle('error', !!isError);
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2400);
+}
+function updateCounts(){
+  document.getElementById('countIn').textContent = records.filter(r=>r.type==='وارد').length;
+  document.getElementById('countOut').textContent = records.filter(r=>r.type==='صادر').length;
+}
+
+/* ---------------- Rendering Logic ---------------- */
+function filteredRecords(list){
+  if(!searchTerm) return list;
+  const q = searchTerm.trim();
+  return list.filter(r =>
+    r.subject.includes(q) || r.ref.includes(q) || r.from.includes(q) || r.to.includes(q)
+  );
+}
+
+function renderRowsList(list){
+  if(list.length === 0){
+    return `<div class="empty"><div class="big">🗂️</div>لا توجد معاملات مطابقة حالياً.</div>`;
+  }
+  const head = `<div class="row head">
+    <div></div><div>الرقم المرجعي</div><div>الموضوع</div><div>الحالة</div><div>الأولوية</div><div>التاريخ</div><div></div>
+  </div>`;
+  
+  const canEdit = hasPermission('edit');
+  const canDelete = hasPermission('delete');
+
+  const rows = list.map(r => `
+    <div class="row">
+      <div class="seal-mini clickable" onclick="openDetail(${r.id})">${sealLabel(r.type)}</div>
+      <div class="ref clickable" onclick="openDetail(${r.id})">${r.ref}</div>
+      <div class="subj clickable" onclick="openDetail(${r.id})">${r.subject}<div class="who">${r.type==='وارد' ? 'من: '+r.from : 'إلى: '+r.to}</div></div>
+      <div class="clickable" onclick="openDetail(${r.id})">${statusBadge(r.status)}</div>
+      <div class="clickable" onclick="openDetail(${r.id})">${priorityBadge(r.priority)}</div>
+      <div class="date-cell clickable" onclick="openDetail(${r.id})">${fmtDate(r.date)}</div>
+      <div class="row-actions">
+        <div class="icon-btn ${canEdit ? '' : 'disabled'}" title="${canEdit ? 'تعديل' : 'محظور'}" onclick="event.stopPropagation(); ${canEdit ? `openForm(null, ${r.id})` : ''}">✎</div>
+        <div class="icon-btn del ${canDelete ? '' : 'disabled'}" title="${canDelete ? 'حذف' : 'محظور'}" onclick="event.stopPropagation(); ${canDelete ? `openDetail(${r.id}, true)` : ''}">🗑</div>
+      </div>
+    </div>`).join('');
+  return `<div class="list">${head}${rows}</div>`;
+}
+
+function renderDashboard(){
+  const total = records.length;
+  const totalIn = records.filter(r=>r.type==='وارد').length;
+  const totalOut = records.filter(r=>r.type==='صادر').length;
+  const pending = records.filter(r=>r.status!=='مكتمل').length;
+
+  const recent = [...filteredRecords(records)].sort((a,b)=> new Date(b.date)-new Date(a.date)).slice(0,6);
+  const canCreate = hasPermission('create');
+
+  document.getElementById('content').innerHTML = `
+    <div class="page-head">
+      <div>
+        <h1>لوحة المتابعة</h1>
+        <p>نظرة عامة على حركة المراسلات الداخلية</p>
+      </div>
+      ${canCreate ? `<button class="btn btn-primary" onclick="openForm()">+ تسجيل معاملة جديدة</button>` : ''}
+    </div>
+
+    <div class="stats">
+      <div class="stat-card c1"><div class="bar"></div><div class="num mono">${total}</div><div class="lbl">إجمالي المعاملات</div></div>
+      <div class="stat-card c2"><div class="bar"></div><div class="num mono">${totalIn}</div><div class="lbl">إجمالي الوارد</div></div>
+      <div class="stat-card c3"><div class="bar"></div><div class="num mono">${totalOut}</div><div class="lbl">إجمالي الصادر</div></div>
+      <div class="stat-card c4"><div class="bar"></div><div class="num mono">${pending}</div><div class="lbl">قيد المتابعة</div></div>
+    </div>
+
+    <div class="section-title">أحدث المعاملات</div>
+    ${renderRowsList(recent)}
+  `;
+}
+
+function renderList(type, title, desc){
+  const list = filteredRecords(records.filter(r => type ? r.type===type : true))
+    .sort((a,b)=> new Date(b.date)-new Date(a.date));
+  const canCreate = hasPermission('create');
+
+  document.getElementById('content').innerHTML = `
+    <div class="page-head">
+      <div><h1>${title}</h1><p>${desc}</p></div>
+      ${canCreate ? `<button class="btn btn-primary" onclick="openForm('${type||''}')">+ تسجيل معاملة ${type ? (type==='وارد'?'واردة':'صادرة') : ''}</button>` : ''}
+    </div>
+    ${renderRowsList(list)}
+  `;
+}
+
+function render(){
+  if(!dataReady || !currentUser) return;
+  if(currentPage === 'dashboard') renderDashboard();
+  else if(currentPage === 'incoming') renderList('وارد', 'البريد الوارد', 'جميع المعاملات الواردة إلى الجهات الداخلية');
+  else if(currentPage === 'outgoing') renderList('صادر', 'البريد الصادر', 'جميع المعاملات الصادرة من الجهات الداخلية');
+  else if(currentPage === 'all') renderList(null, 'جميع المعاملات', 'أرشيف كامل للمراسلات الواردة والصادرة');
+  updateCounts();
+}
+
+/* ---------------- Detail Drawer ---------------- */
+function openDetail(id, confirmDelete){
+  const r = records.find(x=>x.id===id);
+  if(!r) return;
+  
+  const canEdit = hasPermission('edit');
+  const canDelete = hasPermission('delete');
+  const canChangeStatus = hasPermission('status');
+
+  const drawer = document.getElementById('drawer');
+  drawer.innerHTML = `
+    <div class="drawer-head">
+      <div>
+        <div class="ref-big">${r.ref} · ${r.type}</div>
+        <h2>${r.subject}</h2>
+      </div>
+      <button class="drawer-close" onclick="closeOverlay()">✕</button>
+    </div>
+
+    <div class="kv">
+      <div class="k">${r.type==='وارد'?'من':'إلى'}</div><div class="v">${r.type==='وارد' ? r.from : r.to}</div>
+      <div class="k">${r.type==='وارد'?'إلى':'من'}</div><div class="v">${r.type==='وارد' ? r.to : r.from}</div>
+      <div class="k">التاريخ</div><div class="v mono">${fmtDate(r.date)}</div>
+      <div class="k">الأولوية</div><div class="v">${priorityBadge(r.priority)}</div>
+    </div>
+
+    <div class="section-title" style="margin-top:0">حالة المعاملة</div>
+    <div class="status-row">
+      <div class="status-opt ${r.status==='جديد'?'active-new':''} ${canChangeStatus ? '' : 'read-only'}" ${canChangeStatus ? `onclick="setStatus(${r.id}, 'جديد')"` : ''}>جديد</div>
+      <div class="status-opt ${r.status==='قيد المعالجة'?'active-progress':''} ${canChangeStatus ? '' : 'read-only'}" ${canChangeStatus ? `onclick="setStatus(${r.id}, 'قيد المعالجة')"` : ''}>قيد المعالجة</div>
+      <div class="status-opt ${r.status==='مكتمل'?'active-done':''} ${canChangeStatus ? '' : 'read-only'}" ${canChangeStatus ? `onclick="setStatus(${r.id}, 'مكتمل')"` : ''}>مكتمل</div>
+    </div>
+
+    <div class="section-title" style="margin-top:0">الملاحظات</div>
+    <div class="notes-box">${r.notes ? r.notes : 'لا توجد ملاحظات مضافة لهذه المعاملة.'}</div>
+
+    <div class="drawer-actions">
+      ${canEdit ? `<button class="btn btn-outline" style="flex:1" onclick="openForm(null, ${r.id})">✎ تعديل المعاملة</button>` : ''}
+      ${canDelete ? `<button class="btn btn-danger" style="flex:1" onclick="showDeleteConfirm(${r.id})">🗑 حذف المعاملة</button>` : ''}
+    </div>
+
+    <div id="deleteConfirmSlot"></div>
+  `;
+  document.getElementById('overlay').classList.add('show');
+  if(confirmDelete && canDelete) showDeleteConfirm(id);
+}
+
+function showDeleteConfirm(id){
+  if(!hasPermission('delete')) return;
+  const r = records.find(x=>x.id===id);
+  const slot = document.getElementById('deleteConfirmSlot');
+  if(!slot) { openDetail(id, true); return; }
+  slot.innerHTML = `
+    <div class="confirm-box">
+      <p>سيتم حذف المعاملة "${r.ref}" نهائياً من جميع الأجهزة. هل أنت متأكد؟</p>
+      <div class="row-btns">
+        <button class="btn btn-danger-solid" style="flex:1" onclick="deleteRecord(${id})">نعم، احذف</button>
+        <button class="btn btn-outline" style="flex:1" onclick="openDetail(${id})">تراجع</button>
+      </div>
+    </div>
+  `;
+}
+
+async function deleteRecord(id){
+  if(!hasPermission('delete')) {
+    showToast('غير مصرح لك بحذف المعاملات', true);
+    return;
+  }
+  const r = records.find(x=>x.id===id);
+  records = records.filter(x=>x.id!==id);
+  closeOverlay();
+  render();
+  await persist();
+  showToast(`تم حذف المعاملة ${r ? r.ref : ''} بنجاح`);
+}
+
+async function setStatus(id, status){
+  if(!hasPermission('status')) {
+    showToast('غير مصرح لك بتغيير الحالة', true);
+    return;
+  }
+  const r = records.find(x=>x.id===id);
+  r.status = status;
+  openDetail(id);
+  render();
+  await persist();
+  showToast(`تم تحديث حالة المعاملة ${r.ref} إلى: ${status}`);
+}
+
+function closeOverlay(){
+  document.getElementById('overlay').classList.remove('show');
+}
+
+/* ---------------- Record Form (Create/Edit) ---------------- */
+function openForm(presetType, editId){
+  const editing = !!editId;
+  if (editing && !hasPermission('edit')) {
+    showToast('ليس لديك صلاحية لتعديل المعاملات', true);
+    return;
+  }
+  if (!editing && !hasPermission('create')) {
+    showToast('ليس لديك صلاحية لإضافة معاملات جديدة', true);
+    return;
+  }
+
+  const existing = editing ? records.find(x=>x.id===editId) : null;
+  const drawer = document.getElementById('drawer');
+  const refDisplay = editing ? existing.ref : `2026/${String(seq).padStart(4,'0')}`;
+
+  drawer.innerHTML = `
+    <div class="drawer-head">
+      <div><h2 style="margin-bottom:2px">${editing ? 'تعديل المعاملة' : 'تسجيل معاملة جديدة'}</h2><div class="ref-big" style="margin-top:0">الرقم المرجعي: <span class="mono">${refDisplay}</span></div></div>
+      <button class="drawer-close" onclick="closeOverlay()">✕</button>
+    </div>
+
+    <form id="newForm" style="margin-top:18px">
+      <div class="field full">
+        <label>نوع المعاملة</label>
+        <div class="priority-toggle">
+          <label class="p-normal-lbl"><input type="radio" name="type" value="وارد" ${ (editing ? existing.type : presetType)!=='صادر' ?'checked':''}><span>وارد</span></label>
+          <label class="p-urgent-lbl"><input type="radio" name="type" value="صادر" ${ (editing ? existing.type : presetType)==='صادر' ?'checked':''}><span>صادر</span></label>
+        </div>
+      </div>
+
+      <div class="form-grid">
+        <div class="field">
+          <label>من (الجهة المرسلة)</label>
+          <input type="text" name="from" placeholder="مثال: الإدارة المالية" value="${editing ? existing.from : ''}" required>
+        </div>
+        <div class="field">
+          <label>إلى (الجهة المستقبلة)</label>
+          <input type="text" name="to" placeholder="مثال: مكتب المدير العام" value="${editing ? existing.to : ''}" required>
+        </div>
+      </div>
+
+      <div class="field full">
+        <label>الموضوع</label>
+        <input type="text" name="subject" placeholder="موضوع المعاملة" value="${editing ? existing.subject : ''}" required>
+      </div>
+
+      <div class="form-grid">
+        <div class="field">
+          <label>التاريخ</label>
+          <input type="date" name="date" value="${editing ? existing.date : new Date().toISOString().slice(0,10)}" required>
+        </div>
+        <div class="field">
+          <label>الأولوية</label>
+          <div class="priority-toggle">
+            <label class="p-normal-lbl"><input type="radio" name="priority" value="عادي" ${(editing? existing.priority : 'عادي')==='عادي'?'checked':''}><span>عادي</span></label>
+            <label class="p-urgent-lbl"><input type="radio" name="priority" value="عاجل" ${(editing? existing.priority : '')==='عاجل'?'checked':''}><span>عاجل</span></label>
+          </div>
+        </div>
+      </div>
+
+      <div class="field full">
+        <label>ملاحظات (اختياري)</label>
+        <textarea name="notes" placeholder="أي تفاصيل إضافية عن المعاملة...">${editing ? (existing.notes||'') : ''}</textarea>
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="btn btn-outline" onclick="closeOverlay()">إلغاء</button>
+        <button type="submit" class="btn btn-primary" id="formSubmitBtn">${editing ? 'حفظ التعديلات' : 'حفظ المعاملة'}</button>
+      </div>
+    </form>
+  `;
+  document.getElementById('overlay').classList.add('show');
+
+  document.getElementById('newForm').addEventListener('submit', async function(e){
+    e.preventDefault();
+    const btn = document.getElementById('formSubmitBtn');
+    btn.disabled = true;
+    const fd = new FormData(e.target);
+
+    if(editing){
+      existing.type = fd.get('type');
+      existing.date = fd.get('date');
+      existing.from = fd.get('from');
+      existing.to = fd.get('to');
+      existing.subject = fd.get('subject');
+      existing.priority = fd.get('priority');
+      existing.notes = fd.get('notes') || '';
+      closeOverlay();
+      render();
+      await persist();
+      showToast(`تم حفظ تعديلات المعاملة ${existing.ref}`);
+    } else {
+      const rec = {
+        id: Date.now(),
+        type: fd.get('type'),
+        ref: `2026/${String(seq).padStart(4,'0')}`,
+        date: fd.get('date'),
+        from: fd.get('from'),
+        to: fd.get('to'),
+        subject: fd.get('subject'),
+        priority: fd.get('priority'),
+        status: 'جديد',
+        notes: fd.get('notes') || ''
+      };
+      records.unshift(rec);
+      seq++;
+      closeOverlay();
+      render();
+      await persist();
+      showToast(`تم تسجيل المعاملة برقم ${rec.ref} بنجاح`);
+    }
+  });
+}
+
+/* ---------------- Event Listeners ---------------- */
+document.querySelectorAll('.nav-item').forEach(item=>{
+  item.addEventListener('click', ()=>{
+    document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));
+    item.classList.add('active');
+    currentPage = item.dataset.page;
+    document.getElementById('sidebar').classList.remove('open');
+    render();
+  });
+});
+
+document.getElementById('searchInput').addEventListener('input', (e)=>{
+  searchTerm = e.target.value;
+  render();
+});
+
+document.getElementById('overlay').addEventListener('click', (e)=>{
+  if(e.target.id === 'overlay') closeOverlay();
+});
+
+document.getElementById('todayLabel').textContent = 'اليوم: ' + new Date().toLocaleDateString('ar-EG', {weekday:'long', day:'2-digit', month:'2-digit', year:'numeric'});
+
+/* ---------------- Init ---------------- */
+(async function init(){
+  await loadData();
+})();
+</script>
+</body>
+</html>
